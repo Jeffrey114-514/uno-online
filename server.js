@@ -76,7 +76,9 @@ const server = http.createServer((req, res) => {
       return;
     }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
+    if (ext === ".html") headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+    res.writeHead(200, headers);
     res.end(data);
   });
 });

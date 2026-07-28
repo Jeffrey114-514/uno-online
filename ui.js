@@ -218,9 +218,8 @@
     },
 
     setDirection(game) {
-      const cw = game.direction === 1;
-      this.el.direction.textContent = cw ? I.t("cwDir") : I.t("ccwDir");
-      this.el.direction.classList.toggle("counter", !cw);
+      // 玩家视角始终为顺时针（内部 reverse 不影响视觉方向）
+      this.el.direction.classList.remove("counter");
     },
 
     setStatus(text) {

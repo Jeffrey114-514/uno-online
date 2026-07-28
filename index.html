@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <title>UNO · 在线桌游</title>
   <meta name="theme-color" content="#06241a" />
   <link rel="manifest" href="manifest.json" />
@@ -259,7 +260,7 @@
         <button id="appearance-btn" class="ghost-btn" data-i18n-attr="title:appearanceTitle" title="外观设置">🎨</button>
       </div>
       <div class="topbar-center">
-        <div id="direction" class="dir-chip">顺时针</div>
+        <div id="direction" class="dir-chip">顺时针 <span class="dir-hint">（玩家视角永远顺时针）</span></div>
         <div id="status" class="status-text" data-i18n="prepare">准备开始…</div>
         <div id="turn-timer" class="turn-timer" hidden>
           <svg class="timer-ring" viewBox="0 0 48 48" aria-hidden="true">
