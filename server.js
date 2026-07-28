@@ -160,7 +160,7 @@ function broadcastLobby(room) {
   const players = room.names
     .map((name, seat) => (name != null ? { seat, name, isAI: !!(room.ai && room.ai[seat]) } : null))
     .filter(Boolean);
-  broadcast(room, { t: "lobby", players, code: room.code, hostSeat: room.host, public: !!room.public });
+  broadcast(room, { t: "lobby", players, code: room.code, hostSeat: room.host, public: !!room.public, metaConfig: room.metaConfig || null });
 }
 
 /* 把房间内「真人客户端」的座位重排成与引擎一致的连续座位（0..n-1）。
@@ -202,7 +202,7 @@ wss.on("connection", (ws) => {
         if (ws.seat !== null && ws.seat !== undefined) return send(ws, { t: "error", msg: "你已在一个房间内，请先离开" });
         const code = genCode();
         // public 默认 true：公开房可被随机匹配分入；房主可随时改为私人（仅房间号/链接可进）
-        const room = { code, clients: new Map(), host: 0, started: false, names: [], ai: [], public: m.public !== false };
+        const room = { code, clients: new Map(), host: 0, started: false, names: [], ai: [], public: m.public !== false, metaConfig: m.metaConfig || null };
         rooms.set(code, room);
         ws.code = code;
         ws.seat = 0;

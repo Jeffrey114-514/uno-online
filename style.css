@@ -790,6 +790,10 @@ html, body {
 .lobby-player.host::before { background: var(--gold); box-shadow: 0 0 8px rgba(249,208,0,0.6); }
 .lobby-player.ai { background: rgba(120,90,255,0.16); border-color: rgba(120,90,255,0.45); color: #e9e2ff; }
 .lobby-player.ai::before { background: #9a7bff; box-shadow: 0 0 6px rgba(120,90,255,0.5); }
+.lobby-rules { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(249,208,86,0.07); border: 1px dashed rgba(249,208,86,0.3); }
+.lobby-rules-title { font-size: 12px; font-weight: 700; color: #e8c850; margin-bottom: 6px; }
+.lobby-rules-list { font-size: 12.5px; color: rgba(255,255,255,0.7); line-height: 1.7; }
+.lobby-rules-list b { color: #ffe08a; }
 .lobby-ai { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 12px; padding: 12px; border-radius: 14px; background: rgba(120,90,255,0.08); border: 1px dashed rgba(120,90,255,0.35); }
 .lobby-ai-title { font-size: 13px; font-weight: 700; color: #cfc2ff; }
 .lobby-ai-actions { display: flex; gap: 10px; }
@@ -1188,27 +1192,38 @@ html, body {
   position: absolute; bottom: 0; left: 0; right: 0; font-size: 12px; font-weight: 800;
   background: rgba(0,0,0,0.55); color: #fff; padding: 3px 0; text-align: center;
 }
-/* 卡牌皮肤预览：并排两张牌，直观看出该皮肤的质感 */
+/* 卡牌皮肤预览：4 色色条展示该皮肤下牌的质感差异 */
 .swatch-preview {
-  display: flex; align-items: center; justify-content: center; gap: 4px;
-  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+  width: 100%; height: 36px; padding: 4px 0;
 }
-.swatch-preview .skin-prev-card {
-  width: 34px; height: 50px; border-radius: 6px; position: relative;
-  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+.swatch-preview .skin-dot {
+  width: 22px; height: 28px; border-radius: 4px;
+  border: 1.5px solid rgba(255,255,255,0.3);
 }
-/* 预览块内用真实牌面（createCardEl）渲染，缩放至适配色板 */
-.swatch-preview .card { width: 30px; height: 44px; border-width: 2px; margin: 0 1px; }
-.swatch-preview .card.mini { width: 30px; height: 44px; }
-.swatch-preview .card .card-inner { font-size: 16px; }
-.swatch-preview .card .card-corner { font-size: 9px; }
-.swatch-preview .card.wild .wild-label { font-size: 13px; }
-.swatch-preview .skin-prev-card .card-inner {
-  width: 70%; height: 80%; border-radius: 50% / 40%;
-  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;
-  background: #fff; color: #1a1a1a;
-}
+/* 经典（默认）：标准饱和色 */
+.skin-classic .skin-dot.color-red    { background: #d32020; }
+.skin-classic .skin-dot.color-yellow { background: #e6b800; }
+.skin-classic .skin-dot.color-green  { background: #14802c; }
+.skin-classic .skin-dot.color-blue   { background: #0a5cb9; }
+/* 霓虹：深底 + 辉光 */
+.skin-neon .swatch-preview .skin-dot { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 8px 2px rgba(255,255,255,0.15); }
+.skin-neon .skin-dot.color-red    { background: #e3001b; box-shadow: 0 0 10px 2px rgba(227,0,27,0.7), inset 0 0 6px rgba(255,100,100,0.3); }
+.skin-neon .skin-dot.color-yellow { background: #f9d000; box-shadow: 0 0 10px 2px rgba(249,208,0,0.6), inset 0 0 6px rgba(255,230,100,0.3); }
+.skin-neon .skin-dot.color-green  { background: #00a651; box-shadow: 0 0 10px 2px rgba(0,166,81,0.65), inset 0 0 6px rgba(100,255,150,0.25); }
+.skin-neon .skin-dot.color-blue   { background: #0077c8; box-shadow: 0 0 10px 2px rgba(0,119,200,0.65), inset 0 0 6px rgba(100,180,255,0.25); }
+/* 柔彩：马卡龙淡色 */
+.skin-pastel .swatch-preview .skin-dot { border-color: rgba(255,255,255,0.55); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.skin-pastel .skin-dot.color-red    { background: #ff9eb3; }
+.skin-pastel .skin-dot.color-yellow { background: #ffe066; }
+.skin-pastel .skin-dot.color-green  { background: #8be0a8; }
+.skin-pastel .skin-dot.color-blue   { background: #8fd0ff; }
+/* 极简：扁平纯色 + 细线框 */
+.skin-mono .swatch-preview .skin-dot { border: 1.5px solid rgba(0,0,0,0.25); box-shadow: none; border-radius: 3px; }
+.skin-mono .skin-dot.color-red    { background: #ff5a5a; }
+.skin-mono .skin-dot.color-yellow { background: #ffd23f; }
+.skin-mono .skin-dot.color-green  { background: #36c46b; }
+.skin-mono .skin-dot.color-blue   { background: #3aa0ff; }
 /* 各皮肤在预览块上的底色，强化差异（与游戏内皮肤一致） */
 .skin-swatch.skin-classic { background: radial-gradient(circle at 50% 35%, #1f7a4d, #0c3d28 85%); }
 .skin-swatch.skin-neon    { background: #0a0a12; }

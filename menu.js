@@ -21,6 +21,7 @@ function buildCountPicker() {
       wrap.querySelectorAll("button").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
       if (playMode === "ai") aiCount = v; else totalPlayers = v;
+      buildNameInputs();
     });
     wrap.appendChild(b);
   });
@@ -313,7 +314,7 @@ function setupLobby() {
     const isPublic = createPub ? createPub.classList.contains("on") : true;
     connectAnd(() => {
       isHost = true;
-      UnoNet.send({ t: "create", name, public: isPublic });
+      UnoNet.send({ t: "create", name, public: isPublic, metaConfig: { ruleMode, rules } });
     }, (err) => lobbyInfo(I.t("netError", { msg: String(err.message || err) })));
   };
 
@@ -579,6 +580,33 @@ function returnToLobby() {
   // 房主重选模式后点「开始游戏」即可；玩家列表由 lobby 消息刷新
 }
 
+/* 大厅规则同步显示：根据房主的 metaConfig 渲染规则摘要 */
+function showLobbyRules(metaConfig) {
+  const el = document.getElementById("lobby-rules");
+  if (!el) return;
+  if (!metaConfig || !metaConfig.ruleMode) { el.style.display = "none"; return; }
+  el.style.display = "";
+  const mode = metaConfig.ruleMode; // 'classic' | 'family' | 'noMercy'
+  const rules = metaConfig.rules || {};
+  const modeNames = { classic: I.t("modeClassic"), family: I.t("modeFamily"), noMercy: I.t("modeNoMercy") };
+  let html = '<div class="lobby-rules-title">' + I.t("houseTitle") + '</div><div class="lobby-rules-list">';
+  html += '<b>' + (modeNames[mode] || mode) + '</b>';
+  if (mode === "family") {
+    html += ' · ';
+    const items = [];
+    if (rules.stacking) items.push(I.t("ruleStacking"));
+    if (rules.sevenZero) items.push(I.t("ruleSevenZero"));
+    if (rules.drawToMatch) items.push(I.t("ruleDrawToMatch"));
+    if (rules.lastNumber !== false) items.push(I.t("ruleLastNumber"));
+    html += items.length ? items.join(' / ') : '(' + I.t("netRulesHostSet") + ')';
+  } else if (mode === "noMercy") {
+    html += ' · <span style="color:#ff6b6b">168牌 · 叠加 · 25张淘汰</span>';
+  }
+  html += isHost ? '' : ' (' + I.t("netRulesByHost") + ')';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function handleNet(msg) {
   if (!msg) return;
   switch (msg.t) {
@@ -594,6 +622,8 @@ function handleNet(msg) {
       lobbyInfo(I.t("netRoomCode", { code: msg.code }) + " " + I.t("netYouAreHost"));
       showRoomShare(msg.code);
       if (isHost) { const a = document.getElementById("lobby-ai"); if (a) a.style.display = "flex"; }
+      // 房主创建房间后立即显示自己设定的规则（lobby 广播稍后也会刷新）
+      showLobbyRules({ ruleMode, rules });
       break;
     case "joined":
       mySeat = msg.seat; roomCode = msg.code; roomPublic = !!msg.public;
@@ -645,6 +675,8 @@ function handleNet(msg) {
       if (sharePubRow) sharePubRow.style.display = isHost ? "flex" : "none";
       const sharePub = document.getElementById("share-public");
       if (sharePub) { sharePub.classList.toggle("on", roomPublic); sharePub.setAttribute("aria-checked", roomPublic ? "true" : "false"); }
+      // 房间规则同步显示（房主创建时带入的 metaConfig）
+      showLobbyRules(msg.metaConfig);
       break;
     }
     case "reseat": {

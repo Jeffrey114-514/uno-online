@@ -12,7 +12,7 @@
   let passTimer = null;     // 本地摸牌后“自动过牌”计时器（摸牌即视为过）
   let unoGraceTimer = null; // 本地 UNO 宽限窗口计时器
   const UNO_GRACE_MS = 3000; // 仅剩 1 张且未喊 UNO 时，给玩家补喊的宽限时长
-  const AI_FORGET_UNO_PROB = 0.2; // AI 偶尔“忘了喊 UNO”的概率（10%-30% 区间，取 20%）
+  const AI_FORGET_UNO_PROB = 0.7; // AI 忘喊 UNO 概率（70%，大部分时候忘喊，给人类抓 UNO 的机会）
   let lastPlayers = null;
   let difficulty = "normal";
   let aiAuto = false;      // AI 托管：开启后人类玩家回合由 AI 自动出牌
@@ -1583,16 +1583,15 @@
         const b = document.createElement("button");
         b.className = "swatch skin-swatch " + s.cls + (s.id === skin ? " active" : "");
         b.dataset.skin = s.id;
-        // 预览块自带该皮肤类 s.cls，才能套用 .skin-x .card 规则显示真实质感；
-        // 用真实 createCardEl 渲染一张红 7 + 一张万能牌，直观看出差异
+        // 色条预览：4 色小方块展示该皮肤下红/黄/绿/蓝牌的质感差异（比 mini 牌更直观）
         const prev = document.createElement("div");
         prev.className = "swatch-preview " + s.cls;
-        try {
-          prev.appendChild(window.createCardEl(C.makeCard("number", "red", 7), true));
-          prev.appendChild(window.createCardEl(C.makeCard("wild"), true));
-        } catch (e) {
-          prev.innerHTML = `<div class="card color-red"><div class="card-inner"><span class="num">7</span></div></div><div class="card wild"><div class="card-inner">★</div></div></div>`;
-        }
+        const colors = ["red","yellow","green","blue"];
+        colors.forEach((c) => {
+          const dot = document.createElement("span");
+          dot.className = "skin-dot color-" + c;
+          prev.appendChild(dot);
+        });
         b.appendChild(prev);
         const name = document.createElement("span");
         name.className = "swatch-name";
