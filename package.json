@@ -1,0 +1,11 @@
+{
+  "name": "uno-web",
+  "version": "1.0.0",
+  "description": "纯前端 UNO 网页游戏（经典/家庭/无情三模式 + 本地多人 + 在线联机）",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

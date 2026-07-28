@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>UNO · 在线桌游</title>
+  <meta name="theme-color" content="#06241a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ===================== 菜单页 ===================== -->
+  <section id="menu" class="screen">
+    <div class="menu-bg"></div>
+
+    <button id="lang-toggle" class="lang-toggle" title="中文 / English">
+      <span class="lang-zh">中</span><span class="lang-sep">/</span><span class="lang-en">EN</span>
+    </button>
+
+    <div class="menu-inner">
+      <div class="logo">
+        <span class="logo-u">U</span><span class="logo-n">N</span><span class="logo-o">O</span>
+      </div>
+      <p class="tagline" data-i18n="tagline">经典卡牌 · 单机人机 / 本地多人 / 在线联机</p>
+
+      <!-- 三规则模式卡片 -->
+      <div id="mode-cards" class="mode-cards">
+        <button class="mode-card active" data-mode="classic">
+          <div class="mc-icon">🎴</div>
+          <div class="mc-title" data-i18n="modeClassic">经典版</div>
+          <div class="mc-desc" data-i18n="modeClassicDesc">官方标准规则，干净利落。</div>
+        </button>
+        <button class="mode-card" data-mode="family">
+          <div class="mc-icon">👨‍👩‍👧‍👦</div>
+          <div class="mc-title" data-i18n="modeFamily">家庭版</div>
+          <div class="mc-desc" data-i18n="modeFamilyDesc">叠加、7-0 换牌等趣味规则，可微调。</div>
+        </button>
+        <button class="mode-card" data-mode="noMercy">
+          <div class="mc-icon">💥</div>
+          <div class="mc-title" data-i18n="modeNoMercy">无情版</div>
+          <div class="mc-desc" data-i18n="modeNoMercyDesc">168 张牌 · 残酷叠加 · 25 张淘汰。</div>
+        </button>
+      </div>
+
+      <div class="config-card">
+        <!-- 对战形式 -->
+        <div class="config-row">
+          <div class="config-label" data-i18n="playMode">对战形式</div>
+          <div class="mode-switch">
+            <button class="mode-btn active" data-play="ai" data-i18n="modeAI">单人模式</button>
+            <button class="mode-btn" data-play="local" data-i18n="modeLocal">多人模式</button>
+            <button class="mode-btn" data-play="online" data-i18n="modeOnline">在线联机</button>
+          </div>
+        </div>
+
+        <div class="config-row hide-online">
+          <div class="config-label" id="count-label">AI 对手数量</div>
+          <div class="count-picker" id="count-picker"></div>
+        </div>
+
+        <!-- 本地多人：玩家昵称（仅多人模式显示） -->
+        <div class="config-row hide-online" id="local-names-row" style="display:none;">
+          <div class="config-label" data-i18n="pNames">玩家昵称</div>
+          <div class="name-inputs" id="name-inputs"></div>
+        </div>
+
+        <div class="config-row hide-online" id="difficulty-row">
+          <div class="config-label" data-i18n="diffLabel">AI 难度</div>
+          <div class="diff-picker">
+            <button class="diff-btn" data-diff="easy" data-i18n="diffEasy">轻松</button>
+            <button class="diff-btn active" data-diff="normal" data-i18n="diffNormal">普通</button>
+          </div>
+        </div>
+
+        <!-- 家庭规则（仅家庭版显示，可微调，默认全开） -->
+        <div class="config-row hide-online" id="family-rules" style="display:none;">
+          <div class="config-label house-head">
+            <span data-i18n="houseTitle">家庭规则（可微调）</span>
+            <span class="hint-inline" data-i18n="houseSub">自由勾选，开局即按所选规则进行</span>
+          </div>
+          <div class="house-list">
+            <label class="house-item">
+              <input type="checkbox" id="rule-stacking" data-rule="stacking" checked />
+              <span class="house-check"></span>
+              <span class="house-text">
+                <span class="house-name" data-i18n="ruleStackName">叠加 +2 / +4</span>
+                <span class="house-desc" data-i18n="ruleStackHint">被 +2/+4 时可续压同型牌，罚摸累计传递</span>
+              </span>
+            </label>
+            <label class="house-item">
+              <input type="checkbox" id="rule-sevenzero" data-rule="sevenZero" checked />
+              <span class="house-check"></span>
+              <span class="house-text">
+                <span class="house-name" data-i18n="ruleSevenName">7-0 换牌</span>
+                <span class="house-desc" data-i18n="ruleSevenHint">出 7 与任意玩家交换手牌 · 出 0 全体传递手牌</span>
+              </span>
+            </label>
+            <label class="house-item">
+              <input type="checkbox" id="rule-drawmatch" data-rule="drawToMatch" checked />
+              <span class="house-check"></span>
+              <span class="house-text">
+                <span class="house-name" data-i18n="ruleDrawName">摸到能出必须出</span>
+                <span class="house-desc" data-i18n="ruleDrawHint">摸牌后若可出，则必须打出，不能选择「过」</span>
+              </span>
+            </label>
+            <label class="house-item">
+              <input type="checkbox" id="rule-lastnumber" data-rule="lastNumber" checked />
+              <span class="house-check"></span>
+              <span class="house-text">
+                <span class="house-name" data-i18n="ruleLastName">最后一张必须是数字牌</span>
+                <span class="house-desc" data-i18n="ruleLastHint">不能用功能牌（跳过/反转/+2/万能等）收尾，必须留一张数字牌作最后一张</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 在线联机大厅（仅 online 模式显示） -->
+        <div class="config-row" id="lobby" style="display:none;">
+          <div class="lobby-box">
+            <div class="lobby-field">
+              <label data-i18n="netName">你的昵称</label>
+              <input type="text" id="net-name" class="pname-input wide" maxlength="8" />
+              <p class="hint" style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.4);" data-i18n="netNameHint">进入房间后仍可修改，按回车确认</p>
+            </div>
+
+            <!-- 三大操作按钮：点击展开子选项 -->
+            <div class="lobby-panels" id="lobby-panels">
+              <div class="lobby-actions-row">
+                <button class="lobby-action-btn" id="btn-create" data-i18n="netCreate">创建房间</button>
+                <button class="lobby-action-btn" id="btn-match" data-i18n="netMatchStart">随机匹配</button>
+                <button class="lobby-action-btn" id="btn-join-toggle" data-i18n="netJoinRoom">加入房间</button>
+              </div>
+
+              <!-- 子面板：创建房间（公开/私人 + 确认） -->
+              <div class="lobby-subpanel" id="sub-create">
+                <div class="subpanel-inner">
+                  <label class="public-switch">
+                    <span data-i18n="netPublic">公开房间</span>
+                    <button type="button" id="create-public" class="toggle-switch on" role="switch" aria-checked="true"><span class="knob"></span></button>
+                  </label>
+                  <p class="lp-desc" data-i18n="netRoomPublicDesc">公开：其他玩家可随机匹配进来 · 私人：仅凭房间号 / 邀请链接进入</p>
+                  <button class="start-btn small" id="btn-create-confirm" data-i18n="netCreateConfirm">确认创建</button>
+                </div>
+              </div>
+
+              <!-- 子面板：随机匹配状态 -->
+              <div class="lobby-subpanel" id="sub-match">
+                <div class="match-status">
+                  <div class="match-spinner"></div>
+                  <span id="match-status-text" data-i18n="netMatching">匹配中…</span>
+                  <button id="btn-match-cancel" class="ghost-btn tiny" data-i18n="netMatchCancel">取消</button>
+                </div>
+              </div>
+
+              <!-- 子面板：加入房间（输入房间号） -->
+              <div class="lobby-subpanel" id="sub-join">
+                <div class="subpanel-inner">
+                  <p class="lp-desc" data-i18n="netJoinDesc">输入好友分享的 4 位房间号，或通过邀请链接自动填入</p>
+                  <div class="lobby-join-inline">
+                    <input type="text" id="join-code" class="pname-input" maxlength="6" placeholder="ABCD" />
+                    <button id="btn-join-go" class="start-btn small" data-i18n="netJoin">加入房间</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lobby-lan" id="lobby-lan"></div>
+
+            <!-- 进入房间后显示（房主 / 客人共用） -->
+            <div class="lobby-room" id="lobby-room" style="display:none;">
+              <div class="lobby-info" id="lobby-info"></div>
+              <div class="lobby-players" id="lobby-players"></div>
+              <!-- 房主专属：添加 / 移除电脑玩家 -->
+              <div class="lobby-ai" id="lobby-ai" style="display:none;">
+                <div class="lobby-ai-title" data-i18n="netAItitle">电脑玩家（真人与 AI 混合）</div>
+                <div class="lobby-ai-actions">
+                  <button id="btn-add-ai" class="start-btn small ghost" data-i18n="netAddAI">➕ 添加电脑</button>
+                  <button id="btn-remove-ai" class="start-btn small ghost" data-i18n="netRemoveAI">➖ 移除电脑</button>
+                </div>
+                <p class="hint" data-i18n="netAIhint">房主可随时加入电脑玩家，真人与 AI 一起玩（最多 8 人）。</p>
+              </div>
+              <!-- 分享面板：房间号 + 公开/私人开关 + 复制链接（无二维码） -->
+              <div class="lobby-share" id="lobby-share" style="display:none;">
+                <div class="share-title" data-i18n="netShareTitle">把房间分享给好友</div>
+                <div class="room-code-row">
+                  <span class="room-code-label" data-i18n="netRoomCodeLabel">房间号</span>
+                  <span class="room-code-badge" id="room-code-badge">----</span>
+                  <span class="room-public-badge" id="room-public-badge"></span>
+                  <button id="btn-copy-link" class="start-btn small ghost" data-i18n="netCopyLink">复制链接</button>
+                </div>
+                <p class="hint" id="lobby-invite-hint" data-i18n="netInviteHint">复制下面的邀请链接，发给好友即可加入</p>
+                <label class="public-switch" id="share-public-row" style="display:none;">
+                  <span data-i18n="netSharePublicTip">切换公开 / 私人</span>
+                  <button type="button" id="share-public" class="toggle-switch" role="switch" aria-checked="true"><span class="knob"></span></button>
+                </label>
+              </div>
+              <div class="lobby-host" id="lobby-host" style="display:none;">
+                <button id="btn-host-start" class="start-btn" data-i18n="netHostStart">开始游戏</button>
+                <p class="hint" data-i18n="netStartHint">至少 2 人即可开始</p>
+              </div>
+              <button id="btn-lobby-leave" class="ghost-btn lobby-leave" data-i18n="netLeave" style="display:none;">离开房间</button>
+            </div>
+
+            <!-- 带 ?room= 打开页面时的自动加入横幅 -->
+            <div class="lobby-autojoin" id="lobby-autojoin" style="display:none;">
+              <p data-i18n="netAutoJoinTip">检测到邀请链接，点击下方按钮加入房间</p>
+              <button id="btn-autojoin" class="start-btn small" data-i18n="netAutoJoin">加入房间</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-row start-row hide-online">
+          <button id="start-btn" class="start-btn" data-i18n="startBtn">开始游戏</button>
+        </div>
+        <p class="hint" id="menu-hint" data-i18n="menuHintClassic">提示：与电脑对战，可选难度。</p>
+      </div>
+
+      <div class="menu-links">
+        <button id="tutorial-btn" class="rules-link" data-i18n="tutorialBtn">📖 新手教程</button>
+        <button id="rules-btn" class="rules-link" data-i18n="rulesBtn">查看规则 ↗</button>
+        <button id="menu-appearance-btn" class="rules-link" data-i18n="appearanceTitle">🎨 外观</button>
+      </div>
+    </div>
+
+    <!-- 规则弹窗（内容按所选模式注入） -->
+    <div id="rules-modal" class="modal">
+      <div class="modal-box">
+        <button class="modal-close" id="rules-close">×</button>
+        <h2 data-i18n="rulesTitle">UNO 玩法规则</h2>
+        <div id="rules-body" class="rules-body"></div>
+      </div>
+    </div>
+
+    <!-- 新手教程弹窗 -->
+    <div id="tutorial-modal" class="modal">
+      <div class="modal-box tutorial-box">
+        <button class="modal-close" id="tutorial-close">×</button>
+        <h2 data-i18n="tutorialTitle">📖 新手教程</h2>
+        <div class="tut-tabs" id="tut-tabs">
+          <button class="tut-tab active" data-tut="start" data-i18n="tutTabStart">快速上手</button>
+          <button class="tut-tab" data-tut="legend" data-i18n="tutTabLegend">牌型图鉴</button>
+          <button class="tut-tab" data-tut="nomercy" data-i18n="tutTabNoMercy">无情版机制</button>
+        </div>
+        <div id="tutorial-body" class="tutorial-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 游戏页 ===================== -->
+  <section id="game" class="screen">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="quit-btn" class="ghost-btn" data-i18n="quit">← 退出</button>
+        <button id="score-btn" class="ghost-btn" data-i18n-attr="title:scoreTitle" title="查看比分">🏅</button>
+        <button id="mute-btn" class="ghost-btn" data-i18n-attr="title:muteTitle" title="音效开关">🔊</button>
+        <button id="bgm-btn" class="ghost-btn" data-i18n-attr="title:bgmTitle" title="背景音乐">🎵</button>
+        <button id="appearance-btn" class="ghost-btn" data-i18n-attr="title:appearanceTitle" title="外观设置">🎨</button>
+      </div>
+      <div class="topbar-center">
+        <div id="direction" class="dir-chip">⟳ 顺时针</div>
+        <div id="status" class="status-text" data-i18n="prepare">准备开始…</div>
+      </div>
+      <button id="uno-btn" class="uno-call-btn" disabled>UNO!</button>
+    </header>
+
+    <div class="table">
+      <div id="seats"></div>
+
+      <!-- 永久顺时针座位标记：不受出牌方向(reverse)影响，始终指示座位环绕桌面的固定顺序 -->
+      <div id="seat-order-ring" class="seat-order-ring" aria-hidden="true">
+        <svg viewBox="0 0 100 100" class="seat-order-svg">
+          <circle cx="50" cy="50" r="44" class="seat-order-circle" />
+          <polygon points="50,2 60,12 44,12" class="seat-order-arrow" />
+        </svg>
+        <span class="seat-order-label" data-i18n="seatOrder">座位顺序</span>
+      </div>
+
+      <div class="center-pile">
+        <div id="draw-pile" class="draw-pile" title="摸牌">
+          <div class="card-back"><span>UNO</span></div>
+          <div class="pile-count" id="draw-count">0</div>
+        </div>
+        <div class="discard-wrap">
+          <div id="discard-pile" class="discard-pile"></div>
+          <div id="color-indicator" class="color-indicator"></div>
+        </div>
+        <div id="penalty-chip" class="penalty-chip"></div>
+      </div>
+
+      <div class="human-area">
+        <div class="hand-info">
+          <span id="human-name" class="pname">你</span>
+          <span id="human-count" class="pcount">7 张</span>
+        </div>
+        <div id="hand" class="hand"></div>
+        <div class="action-row"></div>
+      </div>
+    </div>
+
+    <!-- 颜色选择 -->
+    <div id="color-modal" class="modal">
+      <div class="modal-box color-box">
+        <h2 data-i18n="colorTitle">选择颜色</h2>
+        <div class="color-choices">
+          <button class="color-choice" data-color="red"></button>
+          <button class="color-choice" data-color="yellow"></button>
+          <button class="color-choice" data-color="green"></button>
+          <button class="color-choice" data-color="blue"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7 换牌：选择交换对象 -->
+    <div id="seven-modal" class="modal">
+      <div class="modal-box seven-box">
+        <h2 data-i18n="sevenTitle">选择交换手牌的对象</h2>
+        <p class="hint" data-i18n="sevenSub">你出了 7，选一位玩家交换全部手牌</p>
+        <div id="seven-choices" class="seven-choices"></div>
+      </div>
+    </div>
+
+    <!-- 胜负 -->
+    <div id="win-overlay" class="overlay">
+      <div class="win-card">
+        <div id="win-emoji" class="win-emoji">🏆</div>
+        <h2 id="win-title">胜利！</h2>
+        <p id="win-sub"></p>
+        <div id="win-scores" class="win-scores"></div>
+        <div class="win-actions">
+          <button id="win-again" class="start-btn" data-i18n="winAgain">再来一局</button>
+          <button id="win-lobby" class="ghost-btn" data-i18n="winLobby">返回大厅</button>
+          <button id="win-menu" class="ghost-btn" data-i18n="winMenu">返回菜单</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 比分弹窗 -->
+    <div id="score-modal" class="modal">
+      <div class="modal-box">
+        <button class="modal-close" id="score-close">×</button>
+        <h2 data-i18n="matchTitle">🏅 本场比分</h2>
+        <div id="score-board" class="score-board"></div>
+        <p class="hint" data-i18n="scoreHint">点「再来一局」可累计比分；返回菜单则开始新比赛。</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 外观设置：卡牌皮肤 / 桌面款式 / 背景音乐（仅本地，互不影响） -->
+  <div id="appearance-modal" class="modal">
+    <div class="modal-box appearance-box">
+      <button class="modal-close" id="appearance-close">×</button>
+      <h2 data-i18n="appearanceTitle">外观设置</h2>
+      <p class="hint" data-i18n="appearanceSub">以下设置仅保存在你自己的设备上，不会影响其他玩家。</p>
+
+      <div class="appearance-row">
+        <div class="appearance-label">
+          <span data-i18n="bgmTitle">背景音乐</span>
+          <button id="bgm-switch" class="toggle-switch" role="switch" aria-checked="true"><span class="knob"></span></button>
+        </div>
+      </div>
+      <div class="appearance-row">
+        <div class="appearance-label">
+          <span data-i18n="bgmVol">音量</span>
+          <input type="range" id="bgm-vol" class="bgm-vol" min="0" max="100" value="50" />
+        </div>
+      </div>
+
+      <div class="appearance-section">
+        <div class="appearance-label"><span data-i18n="appearanceCardSkin">卡牌皮肤</span></div>
+        <div class="swatch-grid" id="skin-grid"></div>
+      </div>
+
+      <div class="appearance-section">
+        <div class="appearance-label"><span data-i18n="appearanceTable">桌面款式</span></div>
+        <div class="swatch-grid" id="table-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 联机断线重连遮罩（瞬时掉线时显示，不踢回主菜单） -->
+  <div id="reconnect-overlay" class="overlay reconnect" hidden>
+    <div class="reconnect-card">
+      <div class="reconnect-spinner"></div>
+      <h2 data-i18n="netReconnecting">连接断开，正在重连…</h2>
+      <p class="hint" id="reconnect-hint" data-i18n="netReconnectHint">请保持网络畅通，我们会自动恢复对局</p>
+    </div>
+  </div>
+
+  <!-- 联机回合倒计时徽标（环形） -->
+  <div id="turn-timer" class="turn-timer" hidden>
+    <svg class="timer-ring" viewBox="0 0 48 48" aria-hidden="true">
+      <circle class="timer-ring-bg" cx="24" cy="24" r="20"></circle>
+      <circle class="timer-ring-fg" cx="24" cy="24" r="20"></circle>
+    </svg>
+    <span class="timer-num">15</span>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="cards.js"></script>
+  <script src="engine.js"></script>
+  <script src="ai.js"></script>
+  <script src="ui.js"></script>
+  <script src="sound.js"></script>
+  <script src="net.js"></script>
+  <script src="router.js"></script>
+  <script src="menu.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

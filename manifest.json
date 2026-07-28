@@ -1,0 +1,16 @@
+{
+  "name": "UNO 在线桌游",
+  "short_name": "UNO",
+  "description": "经典 UNO 卡牌游戏：单机人机 / 本地多人 / 在线联机，支持经典版、家庭版、无情版。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06241a",
+  "theme_color": "#06241a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,63 @@
+# =========================================================
+# UNO 联机版 — Nginx 反向代理配置（网页 + WebSocket 同源）
+#
+# 作用：在云主机上用 Nginx 终结 HTTPS，把 HTTP 与 WebSocket
+#       请求（含 Upgrade 升级头）一并转发给 Node 服务。
+#       浏览器端 WebSocket 地址自动取 wss://你的域名，无需手填。
+#
+# 安装：把本文件放到 /etc/nginx/sites-available/uno
+#       再 ln -s 到 /etc/nginx/sites-enabled/uno
+#       证书用 certbot 申请后填好 ssl_certificate 路径。
+# =========================================================
+
+# HTTP 80：全部 301 跳转到 HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your.domain.com;   # ← 改成你的域名
+
+    # Let's Encrypt 申请证书时需要放开这个路径（certbot 会写规则），其余跳 HTTPS
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS 443：终结 TLS，反代到 Node
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name your.domain.com;   # ← 改成你的域名
+
+    # ---- Let's Encrypt 证书（certbot 申请后路径大致如下）----
+    ssl_certificate     /etc/letsencrypt/live/your.domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your.domain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # 可选：HSTS
+    # add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # 把所有请求（含静态资源与 WebSocket）反代给 Node。
+    # 这样 Service Worker 缓存、同源策略都与本地一致，最简单可靠。
+    location / {
+        proxy_pass http://127.0.0.1:8787;   # ← 与 server.js 的 PORT 一致
+
+        # —— WebSocket 升级头（关键，缺了联机连不上）——
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host       $host;
+        proxy_set_header X-Real-IP  $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 对局可能长时间不断线，调大超时避免被 nginx 切断
+        proxy_read_timeout  3600s;
+        proxy_send_timeout  3600s;
+        proxy_connect_timeout 10s;
+    }
+}

@@ -1,0 +1,11 @@
+# 依赖（运行时通过 npm install 安装；已随仓库提供 package.json）
+node_modules/
+
+# 构建产物（用 python3 build.py 重新生成，无需入库）
+uno-standalone.html
+uno-pack.zip
+
+# 系统 / 编辑器产生的文件
+.DS_Store
+*.log
+Thumbs.db

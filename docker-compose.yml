@@ -1,0 +1,24 @@
+# UNO 联机版 — 容器编排
+# 用法：
+#   docker compose up -d --build      # 构建并后台启动
+#   docker compose logs -f            # 看日志
+#   docker compose down               # 停止并移除
+#
+# 说明：
+#   默认把 8787 只绑到 127.0.0.1，配合同机 Nginx 反代 + HTTPS 使用最安全。
+#   若你想先用 http 裸跑（不推荐生产），把 ports 改成 "8787:8787" 即可。
+services:
+  uno:
+    build: .
+    container_name: uno-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      - PORT=8787
+    # 如需资源限制可取消注释：
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.50"
+    #       memory: 256M
