@@ -12,8 +12,11 @@
   let passTimer = null;     // 本地摸牌后“自动过牌”计时器（摸牌即视为过）
   let unoGraceTimer = null; // 本地 UNO 宽限窗口计时器
   const UNO_GRACE_MS = 3000; // 仅剩 1 张且未喊 UNO 时，给玩家补喊的宽限时长
+  const AI_FORGET_UNO_PROB = 0.2; // AI 偶尔“忘了喊 UNO”的概率（10%-30% 区间，取 20%）
   let lastPlayers = null;
   let difficulty = "normal";
+  let aiAuto = false;      // AI 托管：开启后人类玩家回合由 AI 自动出牌
+  let aiAutoTimer = null;  // AI 托管触发去抖定时器
   let rules = { stacking: true, sevenZero: true, drawToMatch: true, lastNumber: true }; // 家庭规则（默认全开）
   let matchScores = {};
   let matchRound = 0;
@@ -125,6 +128,7 @@
     } else if (myTurn) {
       if (game.pendingDraw > 0) UI.setStatus(I.t("stackRespond", { n: game.pendingDraw }));
       else UI.setStatus(I.t("yourTurn"));
+      maybeAiAuto(); // AI 托管（联机）：轮到自己时自动出牌
     } else {
       UI.setStatus(I.t("waitTurn", { name: game.players[game.current].name }));
     }
@@ -222,8 +226,14 @@
     if (game.players[from].hand.length === 1 && !game.players[from].saidUno && !game.players[from].isAI) {
       game.unoGrace = { seat: from, deadline: Date.now() + UNO_GRACE_MS };
     }
-    // 电脑玩家(AI)：打到剩 1 张自动喊 UNO，无需宽限窗口
-    if (game.players[from].isAI && game.players[from].hand.length === 1) game.players[from].saidUno = true;
+    // 电脑玩家(AI)：打到剩 1 张通常自动喊 UNO，但偶尔也会“忘喊”（与人类一致，按概率进入宽限被罚）
+    if (game.players[from].isAI && game.players[from].hand.length === 1) {
+      if (Math.random() < AI_FORGET_UNO_PROB) {
+        game.unoGrace = { seat: from, deadline: Date.now() + UNO_GRACE_MS };
+      } else {
+        game.players[from].saidUno = true;
+      }
+    }
     if (res.effect === "colorRoulette") { hostRoulette(res.nextIdx); return; }
     // 7-0 换牌 / 传牌（联机：房主权威编排）
     if (res.special === "seven" || res.special === "zero") { hostSpecial(from, res); return; }
@@ -422,6 +432,7 @@
     } else if (myTurn) {
       if (game.pendingDraw > 0) UI.setStatus(I.t("stackRespond", { n: game.pendingDraw }));
       else UI.setStatus(I.t("yourTurn"));
+      maybeAiAuto(); // AI 托管（联机）：轮到自己时自动出牌
     } else {
       UI.setStatus(I.t("waitTurn", { name: game.players[game.current].name }));
     }
@@ -436,6 +447,21 @@
 
   function onNeed(msg) {
     needActive = true;
+    // AI 托管：自动回应选色 / 换牌，无需弹窗，避免卡在 need 等待
+    if (aiAuto) {
+      if (msg.kind === "color") {
+        const color = bestColor(game.players[mySeat]);
+        needActive = false; clearTurnTimer();
+        UnoNet.send({ t: "intent", action: "color", color });
+        return;
+      } else if (msg.kind === "swap") {
+        const targets = msg.targets || [];
+        const tgt = targets.length ? targets[0] : null;
+        needActive = false; clearTurnTimer();
+        UnoNet.send({ t: "intent", action: "swap", target: tgt });
+        return;
+      }
+    }
     if (msg.kind === "color") {
       UI.showColorModal((color) => {
         UI.onColor = null; // 防止回调重复触发
@@ -924,6 +950,50 @@
     if (row) row.innerHTML = "";
   }
 
+  /* ---------------- AI 托管（人类玩家） ---------------- */
+  function updateAiAutoBtn() {
+    const btn = document.getElementById("ai-auto-btn");
+    if (btn) btn.classList.toggle("on", aiAuto);
+  }
+  // 当前是否轮到“人类玩家”（本地：当前座位非 AI 且未淘汰；联机：轮到自己）
+  function isHumanTurnNow() {
+    if (!game || game.over) return false;
+    if (playMode === "online") return game.current === mySeat && !(game.players[mySeat] && game.players[mySeat].eliminated);
+    const cp = game.currentPlayer;
+    return cp && !cp.isAI && !cp.eliminated;
+  }
+  // 满足托管条件时，延迟触发一次自动出牌（去抖，避免重复触发）
+  function maybeAiAuto() {
+    if (!aiAuto || !isHumanTurnNow()) return;
+    if (aiAutoTimer) clearTimeout(aiAutoTimer);
+    aiAutoTimer = setTimeout(autoHumanTurn, 600);
+  }
+  // 用 AI 策略替人类玩家出一手牌（与真人入口一致，万能牌直接带色，避免弹窗）
+  function autoHumanTurn() {
+    aiAutoTimer = null;
+    if (!aiAuto || !game || busy || game.over || !isHumanTurnNow()) return;
+    const isOnline = playMode === "online";
+    const idx = isOnline ? mySeat : game.current;
+    const move = window.UnoAI.chooseMove(game, idx);
+    if (move.action === "draw") {
+      if (isOnline) onlineDraw(); else onDraw();
+      return;
+    }
+    const card = game.players[idx].hand.find((c) => c.id === move.cardId);
+    if (!card || !game.isPlayable(card)) { if (isOnline) onlineDraw(); else onDraw(); return; }
+    let color = move.color;
+    if (C.isWild(card) && !color) color = bestColor(game.players[idx]);
+    if (isOnline) {
+      // 联机：直接发意图（万能牌带色），不弹窗
+      if (C.isWild(card)) UnoNet.send({ t: "intent", action: "play", cardId: move.cardId, color });
+      else UnoNet.send({ t: "intent", action: "play", cardId: move.cardId });
+      busy = true; UI.renderAll(game, false);
+    } else {
+      if (C.isWild(card)) { UI.onlyDrawn = null; doPlay(idx, move.cardId, color); }
+      else onCardClick(move.cardId);
+    }
+  }
+
   function startHumanTurn() {
     busy = false;
     UI.onlyDrawn = null;
@@ -937,6 +1007,7 @@
       UI.setStatus(I.t("yourTurn"));
     }
     refreshUno();
+    maybeAiAuto(); // AI 托管：轮到人类时自动出牌
   }
 
   function noMercyAutoDraw() {
@@ -1033,27 +1104,28 @@
     const finish = () => {
       const res = game.playCard(idx, cardId, color);
       if (!res) { busy = false; return; }
-      // 不再立即罚摸：若打完仅剩 1 张且未喊 UNO，开启宽限窗口自行补喊（disardAll 等一次出多张也能覆盖）
-      if (player.hand.length === 1 && !player.saidUno && !player.isAI) {
-        startLocalUnoGrace(idx);
+      // 仅剩 1 张且未喊 UNO：开“判定宽限”，【宽限结束前不推进回合】，
+      // 防止对手先出牌、玩家趁机出完蒙混过关。宽限期内玩家仍可点 UNO 自救；到期未喊才罚摸并推进。
+      // AI 也按概率偶尔忘喊，与人类一致进入宽限被罚。
+      if (player.hand.length === 1 && !player.saidUno) {
+        if (player.isAI) {
+          if (Math.random() < AI_FORGET_UNO_PROB) {
+            UI.renderAll(game, false);
+            announcePlay(player, res);
+            playEffectSound(res);
+            startLocalUnoGrace(idx, () => afterLocalPlay(idx, player, res));
+            return;
+          }
+          player.saidUno = true; // AI 正常喊 UNO
+        } else {
+          UI.renderAll(game, false);
+          announcePlay(player, res);
+          playEffectSound(res);
+          startLocalUnoGrace(idx, () => afterLocalPlay(idx, player, res));
+          return;
+        }
       }
-      UI.onlyDrawn = null;
-      UI.renderAll(game, false);
-      announcePlay(player, res);
-      playEffectSound(res);
-      if (game.checkEnd()) { endGame(); return; }
-
-      // 颜色轮盘：下家选色
-      if (res.effect === "colorRoulette") {
-        handleRoulette(res.nextIdx, player);
-        return;
-      }
-      // 7-0 换牌 / 传牌
-      if (res.special === "seven" || res.special === "zero") {
-        handleSpecial(idx, res, player);
-        return;
-      }
-      setTimeout(() => proceed(res.effect), 780);
+      afterLocalPlay(idx, player, res);
     };
 
     if (srcEl && targetEl && card) {
@@ -1276,6 +1348,7 @@
       }
       UI.setStatus(I.t("yourTurn"));
       refreshUno();
+      maybeAiAuto(); // AI 托管：No Mercy 强制摸牌后自动出
       return;
     }
 
@@ -1301,6 +1374,7 @@
         if (passTimer) clearTimeout(passTimer);
         passTimer = setTimeout(() => { passTimer = null; UI.onlyDrawn = null; finishTurn("normal"); }, 2000);
       }
+      maybeAiAuto(); // AI 托管：摸到可出的牌时，自动打出
     } else {
       UI.floatMessage(I.t("noPlay"));
       setTimeout(() => { UI.onlyDrawn = null; finishTurn("normal"); }, 850);
@@ -1318,7 +1392,8 @@
       return (game.current === mySeat && me && me.hand.length <= 2) || graceMine;
     }
     const cur = game.currentPlayer;
-    return (cur && cur.hand.length <= 2) || !!game.unoGrace;
+    const humanGrace = game.unoGrace && !game.players[game.unoGrace.seat].isAI;
+    return (cur && !cur.isAI && cur.hand.length <= 2) || !!humanGrace;
   }
   function refreshUno() {
     const vis = unoButtonVisible();
@@ -1327,23 +1402,40 @@
     if (btn) btn.classList.toggle("grace", !!(game && game.unoGrace));
   }
 
-  /* 本地（人机 / 热座）：仅剩 1 张且未喊 UNO → 开启宽限窗口，可补喊；超时未喊罚摸 2 */
-  function startLocalUnoGrace(seat) {
+  /* 本地（人机 / 热座）：仅剩 1 张且未喊 UNO → 开启宽限窗口，可补喊；超时未喊罚摸 2。
+   * cont：宽限结束（被抓或自救）后要执行的回合推进/结算回调（解决“对手先出牌”的蒙混问题） */
+  let unoGraceContinuation = null;
+  function startLocalUnoGrace(seat, cont) {
     if (!game) return;
     game.unoGrace = { seat, deadline: Date.now() + UNO_GRACE_MS };
+    unoGraceContinuation = (typeof cont === "function") ? cont : null;
     refreshUno();
     if (unoGraceTimer) clearTimeout(unoGraceTimer);
     unoGraceTimer = setTimeout(() => {
       unoGraceTimer = null;
-      if (game && game.unoGrace && game.unoGrace.seat === seat &&
-          !game.players[seat].saidUno && !game.players[seat].eliminated && game.players[seat].hand.length === 1) {
+      const g = game && game.unoGrace;
+      if (g && g.seat === seat && !game.players[seat].saidUno && !game.players[seat].eliminated && game.players[seat].hand.length === 1) {
         const penalty = game.enforceUno(seat);
         if (penalty) UI.floatMessage(I.t("fUnoForgot", { name: game.players[seat].name, n: penalty }));
-        game.unoGrace = null;
-        refreshUno();
-        UI.renderAll(game, false);
       }
+      if (game) game.unoGrace = null;
+      refreshUno();
+      UI.renderAll(game, false);
+      const c = unoGraceContinuation; unoGraceContinuation = null;
+      if (c) c();
     }, UNO_GRACE_MS);
+  }
+
+  /* 本地出牌后的统一收尾：播报、特殊牌处理、推进回合 */
+  function afterLocalPlay(idx, player, res) {
+    UI.onlyDrawn = null;
+    UI.renderAll(game, false);
+    announcePlay(player, res);
+    playEffectSound(res);
+    if (game.checkEnd()) { endGame(); return; }
+    if (res.effect === "colorRoulette") { handleRoulette(res.nextIdx, player); return; }
+    if (res.special === "seven" || res.special === "zero") { handleSpecial(idx, res, player); return; }
+    setTimeout(() => proceed(res.effect), 780);
   }
 
   function onUno() {
@@ -1352,13 +1444,16 @@
     // 宽限窗口：某玩家刚打到仅剩 1 张，趁窗口补喊
     if (game.unoGrace) {
       const seat = game.unoGrace.seat;
+      if (game.players[seat].isAI) return; // AI 的宽限不能由人类代喊（避免作弊救 AI）
       game.players[seat].saidUno = true;
       game.unoGrace = null;
       if (unoGraceTimer) { clearTimeout(unoGraceTimer); unoGraceTimer = null; }
+      const c = unoGraceContinuation; unoGraceContinuation = null;
       refreshUno();
       UI.renderSeats(game);
       UI.floatMessage(I.t("fUno"));
       Snd.play("uno");
+      if (c) c(); // 玩家及时喊了 → 立即推进回合
       return;
     }
     const p = game.currentPlayer;
@@ -1488,8 +1583,21 @@
         const b = document.createElement("button");
         b.className = "swatch skin-swatch " + s.cls + (s.id === skin ? " active" : "");
         b.dataset.skin = s.id;
-        // 预览：用该皮肤渲染一张红 7 + 一张万能牌，直观看出质感差异
-        b.innerHTML = `<div class="swatch-preview"><div class="card color-red skin-prev-card"><div class="card-inner">7</div></div><div class="card wild skin-prev-card"><div class="card-inner">★</div></div></div><span class="swatch-name">${I.t(s.key)}</span>`;
+        // 预览块自带该皮肤类 s.cls，才能套用 .skin-x .card 规则显示真实质感；
+        // 用真实 createCardEl 渲染一张红 7 + 一张万能牌，直观看出差异
+        const prev = document.createElement("div");
+        prev.className = "swatch-preview " + s.cls;
+        try {
+          prev.appendChild(window.createCardEl(C.makeCard("number", "red", 7), true));
+          prev.appendChild(window.createCardEl(C.makeCard("wild"), true));
+        } catch (e) {
+          prev.innerHTML = `<div class="card color-red"><div class="card-inner"><span class="num">7</span></div></div><div class="card wild"><div class="card-inner">★</div></div></div>`;
+        }
+        b.appendChild(prev);
+        const name = document.createElement("span");
+        name.className = "swatch-name";
+        name.textContent = I.t(s.key);
+        b.appendChild(name);
         b.addEventListener("click", () => {
           applySkin(s.id);
           skinGrid.querySelectorAll(".swatch").forEach((x) => x.classList.remove("active"));
@@ -1562,6 +1670,17 @@
     const menuApBtn = document.getElementById("menu-appearance-btn");
     if (setBtn) setBtn.addEventListener("click", openSettings);
     if (menuApBtn) menuApBtn.addEventListener("click", openSettings);
+
+    // AI 托管开关（人类玩家）：开启后自动替当前人类出牌
+    try { aiAuto = localStorage.getItem("uno_ai_auto") === "1"; } catch (e) {}
+    updateAiAutoBtn();
+    const aiAutoBtn = document.getElementById("ai-auto-btn");
+    if (aiAutoBtn) aiAutoBtn.addEventListener("click", () => {
+      aiAuto = !aiAuto;
+      try { localStorage.setItem("uno_ai_auto", aiAuto ? "1" : "0"); } catch (e) {}
+      updateAiAutoBtn();
+      maybeAiAuto(); // 开启时立即尝试替当前回合出牌
+    });
     const setClose = document.getElementById("settings-close");
     if (setClose) setClose.addEventListener("click", () => { const m = document.getElementById("settings-modal"); if (m) m.classList.remove("active"); });
     const setModal = document.getElementById("settings-modal");
@@ -1675,6 +1794,7 @@
     UI.setNoMercy(false);
     Snd.setActive(false); // 退出对局：立即关闭音效，避免退出后仍听到出牌声
     if (unoGraceTimer) { clearTimeout(unoGraceTimer); unoGraceTimer = null; }
+    if (aiAutoTimer) { clearTimeout(aiAutoTimer); aiAutoTimer = null; }
     const sp = document.getElementById("turn-splash");
     if (sp) sp.classList.remove("active");
     try { sessionStorage.removeItem("uno_online_session"); } catch(e) {}

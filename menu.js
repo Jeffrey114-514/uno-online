@@ -84,7 +84,10 @@ function applyPlayModeUI() {
   }
 }
 
+let menuBound = false;
 function setupMenu() {
+  if (!menuBound) {
+    menuBound = true;
   // 三规则模式卡片
   document.querySelectorAll(".mode-card").forEach((card) => {
     card.addEventListener("click", () => {
@@ -160,7 +163,9 @@ function setupMenu() {
       } catch (e) { console.warn("[menu] lang toggle error:", e); }
     });
   }
+  } // end menuBound 守卫：以上持久监听器仅绑定一次
 
+  // 每次进入菜单都刷新动态状态（规则卡片高亮 / 计数选择）
   buildCountPicker();
   updateMenuHint();
 }

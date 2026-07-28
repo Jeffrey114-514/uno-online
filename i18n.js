@@ -144,6 +144,7 @@
       /* 设置弹窗 */
       settingsTitle: "设置",
       sfxTitle: "音效",
+      aiAutoTitle: "AI 托管（自动替你出牌，可随时关闭）",
 
       /* 热座遮挡 */
       splashTurn: "轮到 {name}",
@@ -450,6 +451,7 @@
 
       settingsTitle: "Settings",
       sfxTitle: "Sound FX",
+      aiAutoTitle: "AI Auto-play (plays for you, toggle anytime)",
 
       splashTurn: "{name}'s turn",
       splashPass: "Pass the device to this player",

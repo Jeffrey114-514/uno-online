@@ -4,7 +4,7 @@
  *   · 静态资源缓存优先 + 后台更新；导航网络优先、失败回退缓存
  *   · 联机 WebSocket 与服务端动态接口（/ip）不走缓存
  * ========================================================= */
-const CACHE = "uno-cache-v7";
+const CACHE = "uno-cache-v8";
 const ASSETS = [
   "./",
   "./index.html",

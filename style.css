@@ -1108,6 +1108,7 @@ html, body {
 
 /* ===================== 设置弹窗（音效 / BGM / 外观 / 语言） ===================== */
 #settings-btn { font-size: 18px; line-height: 1; }
+#ai-auto-btn.on { background: rgba(247,208,86,0.22); border-color: var(--gold); box-shadow: 0 0 0 2px rgba(247,208,86,0.35); }
 .settings-box {
   max-width: 420px;
   max-height: 82vh;
@@ -1197,6 +1198,12 @@ html, body {
   display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,.4);
 }
+/* 预览块内用真实牌面（createCardEl）渲染，缩放至适配色板 */
+.swatch-preview .card { width: 30px; height: 44px; border-width: 2px; margin: 0 1px; }
+.swatch-preview .card.mini { width: 30px; height: 44px; }
+.swatch-preview .card .card-inner { font-size: 16px; }
+.swatch-preview .card .card-corner { font-size: 9px; }
+.swatch-preview .card.wild .wild-label { font-size: 13px; }
 .swatch-preview .skin-prev-card .card-inner {
   width: 70%; height: 80%; border-radius: 50% / 40%;
   display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;
