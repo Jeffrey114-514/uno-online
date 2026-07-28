@@ -42,6 +42,14 @@
   let hostAITimer = null;       // 房主权威：联机中电脑玩家(AI 座位)的自动出牌定时器
 
 
+  /* 主动关闭/刷新页面：立即通知服务器移除座位（与点击“退出”等效），
+     避免玩家关掉网页后还残留在房间里。意外的网络掉线（无 unload 事件）仍走 60s 重连宽限。 */
+  window.addEventListener("beforeunload", () => {
+    if (netOnline) {
+      try { UnoNet.send({ t: "leave" }); } catch (e) {}
+    }
+  });
+
   /* 所有客户端（含房主）进入游戏页 */
   function onlineStart(names, config, aiArr) {
     resetGameUI();  // ← 联机开局也先彻底重置
@@ -506,18 +514,29 @@
   const TURN_SECONDS = 15;
   let turnTimer = null; // { seat, handle }
 
+  function hideTurnTimer() {
+    const el = document.getElementById("turn-timer");
+    if (el) el.hidden = true;
+  }
+
   function updateTimerUI(sec) {
     const el = document.getElementById("turn-timer");
     if (!el) return;
     const num = el.querySelector(".timer-num");
     const ring = el.querySelector(".timer-ring-fg");
-    if (!sec || sec <= 0) { el.hidden = true; el.classList.remove("low"); return; }
+    const C = 2 * Math.PI * 20; // r=20
+    // 联机对局中始终显示当前回合倒计时：回合切换瞬间也保持可见（仅显示 0），避免“时有时无”
     el.hidden = false;
+    if (ring) { ring.style.strokeDasharray = C.toFixed(2); }
+    if (!sec || sec <= 0) {
+      if (num) num.textContent = "0";
+      if (ring) ring.style.strokeDashoffset = C.toFixed(2);
+      el.classList.add("low");
+      return;
+    }
     if (num) num.textContent = sec;
     if (ring) {
-      const C = 2 * Math.PI * 20; // r=20
       const frac = Math.max(0, Math.min(1, sec / TURN_SECONDS));
-      ring.style.strokeDasharray = C.toFixed(2);
       ring.style.strokeDashoffset = (C * (1 - frac)).toFixed(2);
     }
     el.dataset.sec = sec;
@@ -527,7 +546,7 @@
   function clearTurnTimer() {
     if (turnTimer && turnTimer.handle) clearInterval(turnTimer.handle);
     turnTimer = null;
-    updateTimerUI(0);
+    hideTurnTimer();
   }
 
   // 客户端倒计时只做“展示”：房主广播剩余秒数(turnSeconds)，客户端按收到时刻换算本地截止时间后本地倒数，
@@ -1366,6 +1385,7 @@
 
   function endGame() {
     busy = true;
+    clearTurnTimer(); // 对局结束：停止并隐藏回合倒计时
     hideSpectateControls();
     UI.setUno(false);
     if (game) game.unoGrace = null;

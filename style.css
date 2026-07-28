@@ -181,14 +181,14 @@ html, body {
   background: rgba(0,0,0,0.25); backdrop-filter: blur(4px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.topbar-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
+.topbar-center { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; min-width: 0; }
 .dir-chip {
   font-size: 13px; padding: 6px 12px; border-radius: 999px;
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12);
   white-space: nowrap;
 }
 .dir-chip.counter { color: var(--yellow); }
-.status-text { font-size: 14px; color: rgba(255,255,255,0.85); text-align: center; }
+.status-text { font-size: 14px; color: rgba(255,255,255,0.9); text-align: center; max-width: 42vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 999px; }
 .ghost-btn {
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
   color: #fff; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px;
@@ -218,11 +218,13 @@ html, body {
 .seat {
   position: absolute; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 4px; transition: .3s;
+  z-index: 6;
 }
 .seat.active .seat-name { background: var(--gold); color: var(--ink); }
 .seat-name {
   font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;
   background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); white-space: nowrap;
+  max-width: 112px; overflow: hidden; text-overflow: ellipsis;
   transition: .25s;
 }
 .seat.active .seat-name { box-shadow: 0 0 0 2px var(--gold), 0 0 16px rgba(249,208,0,0.4); }
@@ -245,7 +247,7 @@ html, body {
 /* 中央牌堆 */
 .center-pile {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
-  display: flex; align-items: center; gap: 26px;
+  display: flex; align-items: center; gap: 26px; z-index: 3;
 }
 .draw-pile { cursor: pointer; transition: transform .15s; }
 .draw-pile:hover { transform: translateY(-4px); }
@@ -286,7 +288,7 @@ html, body {
   transform: rotate(0deg); transform-origin: 50px 7px;
 }
 .seat-order-label {
-  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: auto; bottom: -20px; left: 50%; transform: translateX(-50%);
   font-size: 10px; font-weight: 800; letter-spacing: 1px;
   color: rgba(255,255,255,0.55); background: rgba(0,0,0,0.35);
   padding: 2px 10px; border-radius: 999px; white-space: nowrap;
@@ -1022,19 +1024,14 @@ html, body {
 
 /* ===== 联机回合倒计时徽标（环形） ===== */
 .turn-timer {
-  position: fixed;
-  left: 50%;
-  bottom: 110px;
-  transform: translateX(-50%);
-  z-index: 400;
-  width: 62px; height: 62px;
-  display: flex; align-items: center; justify-content: center;
+  position: static;
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  display: inline-flex; align-items: center; justify-content: center;
   border-radius: 50%;
   background: rgba(8, 26, 18, 0.72);
   border: 2px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
-  animation: tt-pulse 1s ease-in-out infinite;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 .turn-timer[hidden] { display: none; }
 .turn-timer .timer-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
@@ -1080,8 +1077,8 @@ html, body {
   .center-pile { gap: 14px; top: 42%; }
 
   /* 倒计时徽标抬到手牌上方，且更小，确保不被遮挡 */
-  .turn-timer { width: 54px; height: 54px; bottom: 100px; }
-  .turn-timer .timer-num { font-size: 19px; }
+  .turn-timer { width: 42px; height: 42px; }
+  .turn-timer .timer-num { font-size: 18px; }
 
   /* 联机大厅在手机上铺满并可滚动 */
   .config-card { width: 100%; padding: 16px; border-radius: 16px; }
@@ -1105,8 +1102,8 @@ html, body {
   .hand .card { margin-left: -20px; }
   .hand { min-height: 84px; }
   .center-pile { gap: 10px; }
-  .turn-timer { width: 48px; height: 48px; bottom: 92px; }
-  .turn-timer .timer-num { font-size: 17px; }
+  .turn-timer { width: 38px; height: 38px; }
+  .turn-timer .timer-num { font-size: 16px; }
   .logo { font-size: 56px; }
 }
 
@@ -1117,7 +1114,7 @@ html, body {
   .card .card-inner { font-size: 22px; }
   .hand { min-height: 84px; }
   .hand .card { margin-left: -20px; }
-  .turn-timer { bottom: 8px; width: 46px; height: 46px; }
+  .turn-timer { width: 40px; height: 40px; }
   .turn-timer .timer-num { font-size: 16px; }
   .seat { min-width: 70px; padding: 5px 8px; }
   .seat-cards { height: 36px; }

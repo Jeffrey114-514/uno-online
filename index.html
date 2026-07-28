@@ -261,6 +261,13 @@
       <div class="topbar-center">
         <div id="direction" class="dir-chip">⟳ 顺时针</div>
         <div id="status" class="status-text" data-i18n="prepare">准备开始…</div>
+        <div id="turn-timer" class="turn-timer" hidden>
+          <svg class="timer-ring" viewBox="0 0 48 48" aria-hidden="true">
+            <circle class="timer-ring-bg" cx="24" cy="24" r="20"></circle>
+            <circle class="timer-ring-fg" cx="24" cy="24" r="20"></circle>
+          </svg>
+          <span class="timer-num">15</span>
+        </div>
       </div>
       <button id="uno-btn" class="uno-call-btn" disabled>UNO!</button>
     </header>
@@ -387,15 +394,6 @@
       <h2 data-i18n="netReconnecting">连接断开，正在重连…</h2>
       <p class="hint" id="reconnect-hint" data-i18n="netReconnectHint">请保持网络畅通，我们会自动恢复对局</p>
     </div>
-  </div>
-
-  <!-- 联机回合倒计时徽标（环形） -->
-  <div id="turn-timer" class="turn-timer" hidden>
-    <svg class="timer-ring" viewBox="0 0 48 48" aria-hidden="true">
-      <circle class="timer-ring-bg" cx="24" cy="24" r="20"></circle>
-      <circle class="timer-ring-fg" cx="24" cy="24" r="20"></circle>
-    </svg>
-    <span class="timer-num">15</span>
   </div>
 
   <script src="i18n.js"></script>
