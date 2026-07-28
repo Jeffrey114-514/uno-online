@@ -116,7 +116,7 @@
           seat.root.classList.add("eliminated");
           seat.root.classList.remove("active", "uno-said");
           seat.name.textContent = p.name + " ✖";
-          seat.count.textContent = "出局";
+          seat.count.textContent = I.t("eliminated");
           seat.cards.innerHTML = "";
           seat.last.innerHTML = "";
           return;

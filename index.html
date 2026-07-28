@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-  <title>UNO · 在线桌游</title>
+  <title data-i18n="pageTitle">UNO · 在线桌游</title>
   <meta name="theme-color" content="#06241a" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -255,12 +255,10 @@
       <div class="topbar-left">
         <button id="quit-btn" class="ghost-btn" data-i18n="quit">← 退出</button>
         <button id="score-btn" class="ghost-btn" data-i18n-attr="title:scoreTitle" title="查看比分">🏅</button>
-        <button id="mute-btn" class="ghost-btn" data-i18n-attr="title:muteTitle" title="音效开关">🔊</button>
-        <button id="bgm-btn" class="ghost-btn" data-i18n-attr="title:bgmTitle" title="背景音乐">🎵</button>
-        <button id="appearance-btn" class="ghost-btn" data-i18n-attr="title:appearanceTitle" title="外观设置">🎨</button>
+        <button id="settings-btn" class="ghost-btn" data-i18n-attr="title:settingsTitle" title="设置">⚙️</button>
       </div>
       <div class="topbar-center">
-        <div id="direction" class="dir-chip">顺时针 <span class="dir-hint">（玩家视角永远顺时针）</span></div>
+        <div id="direction" class="dir-chip"><span data-i18n="cwDir">顺时针</span> <span class="dir-hint" data-i18n="dirHint">（玩家视角永远顺时针）</span></div>
         <div id="status" class="status-text" data-i18n="prepare">准备开始…</div>
         <div id="turn-timer" class="turn-timer" hidden>
           <svg class="timer-ring" viewBox="0 0 48 48" aria-hidden="true">
@@ -299,7 +297,7 @@
 
       <div class="human-area">
         <div class="hand-info">
-          <span id="human-name" class="pname">你</span>
+          <span id="human-name" class="pname" data-i18n="humanName">你</span>
           <span id="human-count" class="pcount">7 张</span>
         </div>
         <div id="hand" class="hand"></div>
@@ -333,7 +331,7 @@
     <div id="win-overlay" class="overlay">
       <div class="win-card">
         <div id="win-emoji" class="win-emoji">🏆</div>
-        <h2 id="win-title">胜利！</h2>
+        <h2 id="win-title" data-i18n="winTitle">胜利！</h2>
         <p id="win-sub"></p>
         <div id="win-scores" class="win-scores"></div>
         <div class="win-actions">
@@ -356,13 +354,21 @@
   </section>
 
 
-  <!-- 外观设置：卡牌皮肤 / 桌面款式 / 背景音乐（仅本地，互不影响） -->
-  <div id="appearance-modal" class="modal">
-    <div class="modal-box appearance-box">
-      <button class="modal-close" id="appearance-close">×</button>
-      <h2 data-i18n="appearanceTitle">外观设置</h2>
-      <p class="hint" data-i18n="appearanceSub">以下设置仅保存在你自己的设备上，不会影响其他玩家。</p>
+  <!-- 设置弹窗：音效 / BGM / 外观 / 语言 -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-box settings-box">
+      <button class="modal-close" id="settings-close">×</button>
+      <h2 data-i18n="settingsTitle">设置</h2>
 
+      <!-- 音效开关 -->
+      <div class="appearance-row">
+        <div class="appearance-label">
+          <span data-i18n="sfxTitle">音效</span>
+          <button id="sfx-switch" class="toggle-switch" role="switch" aria-checked="true"><span class="knob"></span></button>
+        </div>
+      </div>
+
+      <!-- 背景音乐 -->
       <div class="appearance-row">
         <div class="appearance-label">
           <span data-i18n="bgmTitle">背景音乐</span>
@@ -376,6 +382,10 @@
         </div>
       </div>
 
+      <!-- 分隔线 -->
+      <hr class="settings-divider" />
+
+      <!-- 外观：卡牌皮肤 / 桌面款式 -->
       <div class="appearance-section">
         <div class="appearance-label"><span data-i18n="appearanceCardSkin">卡牌皮肤</span></div>
         <div class="swatch-grid" id="skin-grid"></div>
@@ -384,6 +394,17 @@
       <div class="appearance-section">
         <div class="appearance-label"><span data-i18n="appearanceTable">桌面款式</span></div>
         <div class="swatch-grid" id="table-grid"></div>
+      </div>
+
+      <!-- 分隔线 -->
+      <hr class="settings-divider" />
+
+      <!-- 语言切换 -->
+      <div class="appearance-row">
+        <div class="appearance-label">
+          <span>Language / 语言</span>
+          <button id="lang-toggle-inline" class="lang-toggle-inline ghost-btn">中 / EN</button>
+        </div>
       </div>
     </div>
   </div>

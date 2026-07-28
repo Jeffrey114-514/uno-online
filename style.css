@@ -1102,9 +1102,19 @@ html, body {
   .card.mini { width: 34px; height: 50px; }
 }
 
-/* ===================== 外观设置（皮肤 / 桌面 / BGM） ===================== */
-#appearance-btn, #bgm-btn { font-size: 18px; line-height: 1; }
-.appearance-box { max-width: 420px; }
+/* ===================== 设置弹窗（音效 / BGM / 外观 / 语言） ===================== */
+#settings-btn { font-size: 18px; line-height: 1; }
+.settings-box { max-width: 420px; }
+.settings-divider {
+  border: none; border-top: 1px solid rgba(255,255,255,0.1);
+  margin: 14px 0;
+}
+.lang-toggle-inline {
+  font-size: 13px; padding: 6px 14px; border-radius: 8px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; cursor: pointer; font-weight: 700;
+}
+.lang-toggle-inline:hover { background: rgba(255,255,255,0.16); }
 .appearance-row { margin: 12px 0 6px; }
 .appearance-section { margin: 14px 0; }
 .appearance-label {

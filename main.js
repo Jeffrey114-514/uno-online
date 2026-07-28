@@ -42,13 +42,10 @@
   let hostAITimer = null;       // 房主权威：联机中电脑玩家(AI 座位)的自动出牌定时器
 
 
-  /* 主动关闭/刷新页面：立即通知服务器移除座位（与点击“退出”等效），
-     避免玩家关掉网页后还残留在房间里。意外的网络掉线（无 unload 事件）仍走 60s 重连宽限。 */
-  window.addEventListener("beforeunload", () => {
-    if (netOnline) {
-      try { UnoNet.send({ t: "leave" }); } catch (e) {}
-    }
-  });
+  /* 关闭/刷新页面：不再主动发 leave（避免刷新被踢出）。
+     依赖 server.js 的 RECONNECT_GRACE=60s 宽限：
+     - 关标签页：WS 断开 → 60s 内无重连 → 自动移除（体验可接受）
+     - 刷新页面：WS 断开 → 页面快速重载 → WS 在 60s 内重连 → rejoin 成功 */
 
   /* 所有客户端（含房主）进入游戏页 */
   function onlineStart(names, config, aiArr) {
@@ -727,7 +724,7 @@
     hideReconnectOverlay();
     if (UI.hideColorModal) UI.hideColorModal();
     if (UI.hideSevenModal) UI.hideSevenModal();
-    const ap = document.getElementById("appearance-modal");
+    const ap = document.getElementById("settings-modal");
     if (ap) ap.classList.remove("active");
     // 清除回合闪现
     const sp = document.getElementById("turn-splash");
@@ -1519,12 +1516,13 @@
     const bgmSwitch = document.getElementById("bgm-switch");
     const syncBgmSwitch = () => { if (bgmSwitch) bgmSwitch.setAttribute("aria-checked", Snd.isBgmOn() ? "true" : "false"); };
     syncBgmSwitch();
-    if (bgmSwitch) bgmSwitch.addEventListener("click", () => { Snd.setBgm(!Snd.isBgmOn()); syncBgmSwitch(); syncBgmBtn(); });
+    if (bgmSwitch) bgmSwitch.addEventListener("click", () => { Snd.setBgm(!Snd.isBgmOn()); syncBgmSwitch(); });
 
-    const bgmBtn = document.getElementById("bgm-btn");
-    const syncBgmBtn = () => { if (bgmBtn) { bgmBtn.textContent = Snd.isBgmOn() ? "🎵" : "🔇"; bgmBtn.title = I.t("bgmTitle"); } };
-    syncBgmBtn();
-    if (bgmBtn) bgmBtn.addEventListener("click", () => { Snd.setBgm(!Snd.isBgmOn()); syncBgmSwitch(); syncBgmBtn(); });
+    // 音效开关（SFX toggle，原 mute-btn）
+    const sfxSwitch = document.getElementById("sfx-switch");
+    const syncSfxSwitch = () => { if (sfxSwitch) sfxSwitch.setAttribute("aria-checked", !Snd.isMuted() ? "true" : "false"); };
+    syncSfxSwitch();
+    if (sfxSwitch) sfxSwitch.addEventListener("click", () => { Snd.toggle(); syncSfxSwitch(); });
 
     // 背景音乐音量滑块（0~100 → 0~1）
     const bgmVolEl = document.getElementById("bgm-vol");
@@ -1534,22 +1532,40 @@
       Snd.setBgmVolume((parseInt(bgmVolEl.value, 10) || 0) / 100);
     });
 
-    const openAppearance = () => {
+    // 语言切换（设置弹窗内）
+    const langInlineBtn = document.getElementById("lang-toggle-inline");
+    const syncLangInline = () => {
+      if (langInlineBtn) {
+        langInlineBtn.textContent = I.lang === "zh" ? "中 / EN" : "EN / 中";
+        langInlineBtn.classList.toggle("en", I.lang === "en");
+      }
+    };
+    syncLangInline();
+    if (langInlineBtn) langInlineBtn.addEventListener("click", () => {
+      I.toggle();
+      syncLangInline();
+      I.applyStatic();
+    });
+
+    // 设置弹窗：打开/关闭
+    const openSettings = () => {
       skinGrid.querySelectorAll(".swatch").forEach((x) => x.classList.toggle("active", x.dataset.skin === (localStorage.getItem("uno_skin") || "classic")));
       tableGrid.querySelectorAll(".swatch").forEach((x) => x.classList.toggle("active", x.dataset.table === (localStorage.getItem("uno_table") || "green")));
       syncBgmSwitch();
+      syncSfxSwitch();
       syncBgmVol();
-      const m = document.getElementById("appearance-modal");
+      syncLangInline();
+      const m = document.getElementById("settings-modal");
       if (m) m.classList.add("active");
     };
-    const apBtn = document.getElementById("appearance-btn");
+    const setBtn = document.getElementById("settings-btn");
     const menuApBtn = document.getElementById("menu-appearance-btn");
-    if (apBtn) apBtn.addEventListener("click", openAppearance);
-    if (menuApBtn) menuApBtn.addEventListener("click", openAppearance);
-    const apClose = document.getElementById("appearance-close");
-    if (apClose) apClose.addEventListener("click", () => { const m = document.getElementById("appearance-modal"); if (m) m.classList.remove("active"); });
-    const apModal = document.getElementById("appearance-modal");
-    if (apModal) apModal.addEventListener("click", (e) => { if (e.target === apModal) apModal.classList.remove("active"); });
+    if (setBtn) setBtn.addEventListener("click", openSettings);
+    if (menuApBtn) menuApBtn.addEventListener("click", openSettings);
+    const setClose = document.getElementById("settings-close");
+    if (setClose) setClose.addEventListener("click", () => { const m = document.getElementById("settings-modal"); if (m) m.classList.remove("active"); });
+    const setModal = document.getElementById("settings-modal");
+    if (setModal) setModal.addEventListener("click", (e) => { if (e.target === setModal) setModal.classList.remove("active"); });
   }
 
   /* ---------------- 初始化 ---------------- */
@@ -1600,11 +1616,6 @@
     });
 
     UI.onInvalid = () => Snd.play("invalid");
-
-    const muteBtn = document.getElementById("mute-btn");
-    const refreshMute = () => { muteBtn.textContent = Snd.isMuted() ? "🔇" : "🔊"; };
-    refreshMute();
-    muteBtn.addEventListener("click", () => { Snd.toggle(); refreshMute(); });
 
     const scoreModal = document.getElementById("score-modal");
     document.getElementById("score-btn").addEventListener("click", () => {

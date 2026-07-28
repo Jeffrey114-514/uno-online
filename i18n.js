@@ -117,6 +117,7 @@
       tableCrimson: "酒红",
       cwDir: "顺时针",
       ccwDir: "逆时针",
+      dirHint: "（玩家视角永远顺时针）",
       seatOrder: "座位顺序",
       prepare: "准备开始…",
       pass: "过 (Pass)",
@@ -125,6 +126,7 @@
       sevenSub: "你出了 7，选一位玩家交换全部手牌",
 
       /* 胜负 / 比分 */
+      winTitle: "胜利！",
       winAgain: "再来一局",
       winWaitHost: "等待房主开始下一局…",
       winRematchAsked: "已请求，等待开始…",
@@ -132,6 +134,16 @@
       matchTitle: "🏅 本场比分",
       scoreHint: "点「再来一局」可累计比分；返回菜单则开始新比赛。",
       scoreTotalPrefix: "总分 ",
+
+      /* 游戏内静态文字 */
+      drawPile: "摸牌",
+      humanName: "你",
+      cardSuffix: " 张",
+      eliminated: "出局",
+
+      /* 设置弹窗 */
+      settingsTitle: "设置",
+      sfxTitle: "音效",
 
       /* 热座遮挡 */
       splashTurn: "轮到 {name}",
@@ -414,6 +426,7 @@
       tableCrimson: "Crimson",
       cwDir: "Clockwise",
       ccwDir: "Counter-CW",
+      dirHint: " (player view always clockwise)",
       seatOrder: "Seat Order",
       prepare: "Getting ready…",
       pass: "Pass",
@@ -422,12 +435,21 @@
       sevenSub: "You played a 7 — pick a player to swap all cards with",
 
       winAgain: "Play Again",
+      winTitle: "Victory!",
       winWaitHost: "Waiting for host to start next round…",
       winRematchAsked: "Requested, waiting to start…",
       winMenu: "Menu",
       matchTitle: "🏅 Match Scores",
       scoreHint: "Play Again keeps scoring; Menu starts a fresh match.",
       scoreTotalPrefix: "Total ",
+
+      drawPile: "Draw",
+      humanName: "You",
+      cardSuffix: " cards",
+      eliminated: "Out",
+
+      settingsTitle: "Settings",
+      sfxTitle: "Sound FX",
 
       splashTurn: "{name}'s turn",
       splashPass: "Pass the device to this player",
