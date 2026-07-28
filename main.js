@@ -12,7 +12,8 @@
   let passTimer = null;     // 本地摸牌后“自动过牌”计时器（摸牌即视为过）
   let unoGraceTimer = null; // 本地 UNO 宽限窗口计时器
   const UNO_GRACE_MS = 3000; // 仅剩 1 张且未喊 UNO 时，给玩家补喊的宽限时长
-  const AI_FORGET_UNO_PROB = 0.7; // AI 忘喊 UNO 概率（70%，大部分时候忘喊，给人类抓 UNO 的机会）
+  const AI_FORGET_UNO_PROB = 0.25; // 普通 AI 对手忘喊 UNO 概率（20%-30% 区间，取 25%）
+  const AI_HOSTED_FORGET_UNO_PROB = 1.0; // 托管 AI（人类代打）：干脆不喊 UNO（100% 忘），让对手抓罚牌
   let lastPlayers = null;
   let difficulty = "normal";
   let aiAuto = false;      // AI 托管：开启后人类玩家回合由 AI 自动出牌
@@ -222,11 +223,11 @@
     announcePlay(game.players[from], res);
     playEffectSound(res);
     if (game.checkEnd()) { hostEnd(); return; }
-    // UNO 宽限窗口：仅剩 1 张且未喊 UNO 时给一次补喊机会（disardAll 等一次出多张也能覆盖）
+    // UNO 宽限窗口：真人手动 / 托管人类（human 分支，不自动喊 UNO，由对手抓罚）
     if (game.players[from].hand.length === 1 && !game.players[from].saidUno && !game.players[from].isAI) {
       game.unoGrace = { seat: from, deadline: Date.now() + UNO_GRACE_MS };
     }
-    // 电脑玩家(AI)：打到剩 1 张通常自动喊 UNO，但偶尔也会“忘喊”（与人类一致，按概率进入宽限被罚）
+    // 普通 AI 对手：打到剩 1 张通常自动喊 UNO，但按 AI_FORGET_UNO_PROB（25%）偶尔“忘喊”进入宽限被罚
     if (game.players[from].isAI && game.players[from].hand.length === 1) {
       if (Math.random() < AI_FORGET_UNO_PROB) {
         game.unoGrace = { seat: from, deadline: Date.now() + UNO_GRACE_MS };
@@ -1106,24 +1107,26 @@
       if (!res) { busy = false; return; }
       // 仅剩 1 张且未喊 UNO：开“判定宽限”，【宽限结束前不推进回合】，
       // 防止对手先出牌、玩家趁机出完蒙混过关。宽限期内玩家仍可点 UNO 自救；到期未喊才罚摸并推进。
-      // AI 也按概率偶尔忘喊，与人类一致进入宽限被罚。
       if (player.hand.length === 1 && !player.saidUno) {
+        let forget = false;
         if (player.isAI) {
-          if (Math.random() < AI_FORGET_UNO_PROB) {
-            UI.renderAll(game, false);
-            announcePlay(player, res);
-            playEffectSound(res);
-            startLocalUnoGrace(idx, () => afterLocalPlay(idx, player, res));
-            return;
-          }
-          player.saidUno = true; // AI 正常喊 UNO
+          // 普通 AI 对手：按 AI_FORGET_UNO_PROB（25%）偶尔忘喊
+          forget = Math.random() < AI_FORGET_UNO_PROB;
+        } else if (aiAuto) {
+          // 托管 AI（人类代打）：干脆不喊 UNO（AI_HOSTED_FORGET_UNO_PROB=1.0），由对手抓罚
+          forget = Math.random() < AI_HOSTED_FORGET_UNO_PROB;
         } else {
+          // 真人手动：进入宽限，玩家可点 UNO 自救
+          forget = true;
+        }
+        if (forget) {
           UI.renderAll(game, false);
           announcePlay(player, res);
           playEffectSound(res);
           startLocalUnoGrace(idx, () => afterLocalPlay(idx, player, res));
           return;
         }
+        player.saidUno = true; // AI 正常喊 UNO
       }
       afterLocalPlay(idx, player, res);
     };
