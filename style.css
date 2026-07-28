@@ -22,6 +22,10 @@ html, body {
   color: #fff;
   -webkit-tap-highlight-color: transparent;
 }
+/* 菜单页允许纵向滚动（小屏幕/设置弹窗内容多时需要） */
+#menu.screen-active {
+  overflow-y: auto;
+}
 
 /* === 路由屏幕系统（带过渡动画）=== */
 .screen {
@@ -1104,7 +1108,18 @@ html, body {
 
 /* ===================== 设置弹窗（音效 / BGM / 外观 / 语言） ===================== */
 #settings-btn { font-size: 18px; line-height: 1; }
-.settings-box { max-width: 420px; }
+.settings-box {
+  max-width: 420px;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding-right: 10px;
+  /* 自定义滚动条（暗色主题） */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+.settings-box::-webkit-scrollbar { width: 6px; }
+.settings-box::-webkit-scrollbar-track { background: transparent; }
+.settings-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 .settings-divider {
   border: none; border-top: 1px solid rgba(255,255,255,0.1);
   margin: 14px 0;

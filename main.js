@@ -1677,6 +1677,7 @@
     if (unoGraceTimer) { clearTimeout(unoGraceTimer); unoGraceTimer = null; }
     const sp = document.getElementById("turn-splash");
     if (sp) sp.classList.remove("active");
+    try { sessionStorage.removeItem("uno_online_session"); } catch(e) {}
     if (playMode === "online") {
       try { UnoNet.send({ t: "leave" }); } catch (e) {}
       // 先把联机状态复位，再关闭 socket：close 可能同步触发 onclose → disconnected → goMenu 重入，造成无限递归
@@ -1703,6 +1704,27 @@
   } else {
     init();
   }
+
+  /* ===== 刷新安全网：防止落在无数据的游戏界面上卡死 =====
+   * 刷新后 JS 状态全丢失（game=null, onlineStarted=false, netOnline=false），
+   * 但 URL hash 可能仍是 #game，Router 会显示空壳游戏界面（一张牌、计时器归零、"准备开始…"）。
+   * 检测此情况并自动回退到菜单。
+   * 联机模式额外处理：若 sessionStorage 存有房间信息，可尝试重连或提示用户。
+   */
+  const _staleGuard = setTimeout(() => {
+    if (typeof Router !== 'undefined' && Router.current === "game" && !game && !onlineStarted && !netOnline) {
+      console.log("[init] Stale game screen after refresh — returning to menu");
+      // 尝试从 sessionStorage 恢复联机房间信息（给用户一个选择而非直接丢弃）
+      try {
+        const sess = JSON.parse(sessionStorage.getItem("uno_online_session") || "null");
+        if (sess && sess.roomCode && location.hash === "#game") {
+          // 保留房间信息供后续可能的重连功能使用；当前先回菜单
+          sessionStorage.removeItem("uno_online_session");
+        }
+      } catch(e) {}
+      Router.navigate("menu");
+    }
+  }, 200);
 
   // 调试 / 测试句柄（仅暴露读取与少量入口，不影响游戏逻辑）
   if (typeof window !== "undefined") {

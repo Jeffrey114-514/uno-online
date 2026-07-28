@@ -140,18 +140,26 @@ function setupMenu() {
 
   setupTutorial();
 
-  // 语言切换
+  // 语言切换（菜单页右上角 中/EN 按钮）
   const langBtn = document.getElementById("lang-toggle");
-  langBtn.classList.toggle("en", I.lang === "en");
-  langBtn.addEventListener("click", () => {
-    const l = I.toggle();
-    langBtn.classList.toggle("en", l === "en");
-    buildCountPicker();
-    updateMenuHint();
-    document.getElementById("rules-body").innerHTML = I.t(
-      ruleMode === "classic" ? "rulesClassic" : ruleMode === "family" ? "rulesFamily" : "rulesNoMercy"
-    );
-  });
+  if (langBtn) {
+    langBtn.classList.toggle("en", I.lang === "en");
+    langBtn.addEventListener("click", () => {
+      try {
+        const l = I.toggle();       // 内部已调 applyStatic()，但下方再刷一遍确保动态内容也更新
+        langBtn.classList.toggle("en", l === "en");
+        buildCountPicker();
+        updateMenuHint();
+        // 规则弹窗内容也需要跟随语言切换（用户可能已打开过规则弹窗）
+        const rulesBody = document.getElementById("rules-body");
+        if (rulesBody) rulesBody.innerHTML = I.t(
+          ruleMode === "classic" ? "rulesClassic" : ruleMode === "family" ? "rulesFamily" : "rulesNoMercy"
+        );
+        // 二次 applyStatic：确保 setupMenu 动态写入的文本（如 count-label）也被翻译
+        I.applyStatic();
+      } catch (e) { console.warn("[menu] lang toggle error:", e); }
+    });
+  }
 
   buildCountPicker();
   updateMenuHint();
@@ -572,6 +580,8 @@ function handleNet(msg) {
     case "created":
       mySeat = msg.seat; roomCode = msg.code; roomPublic = !!msg.public;
       netOnline = true;
+      // 保存联机会话信息：刷新后可用于检测"是否在对局中"并尝试恢复
+      try { sessionStorage.setItem("uno_online_session", JSON.stringify({ roomCode: msg.code, seat: msg.seat, isHost: true, ts: Date.now() })); } catch(e) {}
       document.getElementById("btn-lobby-leave").style.display = "inline-block";
       { const ms = document.getElementById("sub-match"); if (ms) ms.classList.remove("open"); }
       document.getElementById("lobby-panels").style.display = "none";
@@ -583,6 +593,8 @@ function handleNet(msg) {
     case "joined":
       mySeat = msg.seat; roomCode = msg.code; roomPublic = !!msg.public;
       netOnline = true;
+      // 保存联机会话信息
+      try { sessionStorage.setItem("uno_online_session", JSON.stringify({ roomCode: msg.code, seat: msg.seat, isHost: false, ts: Date.now() })); } catch(e) {}
       document.getElementById("btn-lobby-leave").style.display = "inline-block";
       { const ms = document.getElementById("sub-match"); if (ms) ms.classList.remove("open"); }
       document.getElementById("lobby-panels").style.display = "none";
