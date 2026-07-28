@@ -1024,7 +1024,7 @@ html, body {
 
 /* ===== 联机回合倒计时徽标（环形） ===== */
 .turn-timer {
-  position: static;
+  position: relative;
   flex: 0 0 auto;
   width: 46px; height: 46px;
   display: inline-flex; align-items: center; justify-content: center;
